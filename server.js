@@ -1,7 +1,14 @@
 const cors = require('cors');
 const express = require('express');
 const app = express();
+const http = require('http');
 const WebSocket = require('ws');
+const socketio = require('socket.io');
+const port = process.env.PORT || 5000;
+
+const server = http.createServer(app);
+const io = socketio(server);
+
 
 var ws = new WebSocket('wss://ws.coinapi.io/v1/');
 ws.on('open', () => {
@@ -16,15 +23,26 @@ ws.on('open', () => {
     ws.send(JSON.stringify(hello));
 });
 
-ws.on('message', (data) => {
-    console.log(data);
+var updates=[];
+
+
+ws.on('message', (data,err) => {
+    console.log("data is:", data);
+    if(err){
+        console.log(err);    
+        return;
+    }
+    updates.push(data);
 });
+
+
+io.on('connection', (socket) => {
+    console.log('a user connected!');
+});
+
+io.emit('updates', updates);
 
 app.use(cors());
-app.listen(5000, () => {
+server.listen(port, () => {
     console.log("Connection successful");
-});
-
-app.get('/api',(req,res) => {
-    res.send("Exchange rates");
 });
