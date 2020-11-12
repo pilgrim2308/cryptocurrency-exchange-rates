@@ -4,11 +4,14 @@ const app = express();
 const http = require('http');
 const WebSocket = require('ws');
 const socketio = require('socket.io');
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 4001;
 
 const server = http.createServer(app);
 const io = socketio(server);
 
+io.on('connection', (socket) => {
+    console.log('a user connected!');
+});
 
 var ws = new WebSocket('wss://ws.coinapi.io/v1/');
 ws.on('open', () => {
@@ -22,27 +25,22 @@ ws.on('open', () => {
     };
     ws.send(JSON.stringify(hello));
 });
-
-var updates=[];
-
-
+// 
 ws.on('message', (data,err) => {
-    console.log("data is:", data);
     if(err){
         console.log(err);    
         return;
     }
-    updates.push(data);
+    console.log(data);
+    var obj = JSON.parse(data);
+    obj.time_exchange = Date.parse(obj.time_exchange);
+    io.emit('updates', obj);
 });
 
-
-io.on('connection', (socket) => {
-    console.log('a user connected!');
+app.get('/', (req,res) => {
+    res.send("Homepage");
 });
 
-io.emit('updates', updates);
-
-app.use(cors());
 server.listen(port, () => {
     console.log("Connection successful");
 });
